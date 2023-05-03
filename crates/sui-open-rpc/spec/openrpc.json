@@ -2269,7 +2269,47 @@
         "schema": {
           "$ref": "#/components/schemas/SuiObjectResponse"
         }
-      }
+      },
+      "examples": [
+        {
+          "name": "Gets a particular dynamic field data of the parent object.",
+          "params": [
+            {
+              "name": "parent_object_id",
+              "value": "0x8ab783f697e7b61439368cd75ebe63d633af32ffb4a022d18b95b4eaa9fd3b22"
+            },
+            {
+              "name": "name",
+              "value": {
+                "type": "0x9::test::TestField",
+                "value": "some_value"
+              }
+            }
+          ],
+          "result": {
+            "name": "Result",
+            "value": {
+              "data": {
+                "objectId": "0x8ab783f697e7b61439368cd75ebe63d633af32ffb4a022d18b95b4eaa9fd3b22",
+                "version": "1",
+                "digest": "Dh8Ucei4zVjkwCcSjbRQy13Vr7VihPQwyRygNCs59URp",
+                "type": "0x9::test::TestField",
+                "owner": {
+                  "AddressOwner": "0xb43f6b2c8e92090bd6d16522a6fd4fa83ec70a5f197ad656da104dde1de9880b"
+                },
+                "previousTransaction": "GdEdtzP6D9tv9Yx4ATNVPKQBLv9TQmBcxoURkP2zuTUm",
+                "storageRebate": "100",
+                "content": {
+                  "dataType": "moveObject",
+                  "type": "0x9::test::TestField",
+                  "hasPublicTransfer": true,
+                  "fields": {}
+                }
+              }
+            }
+          }
+        }
+      ]
     },
     {
       "name": "suix_getDynamicFields",
@@ -2311,7 +2351,71 @@
         "schema": {
           "$ref": "#/components/schemas/Page_for_DynamicFieldInfo_and_ObjectID"
         }
-      }
+      },
+      "examples": [
+        {
+          "name": "Get all the dynamic fields of a particular object. Return a paginated list of `limit` results per page. The current limit is 50 per page.",
+          "params": [
+            {
+              "name": "parent_object_id",
+              "value": "0xdc5b824808df54bfec4fc817622e5add0e48f749f01def98504d411325e3c7f8"
+            },
+            {
+              "name": "cursor",
+              "value": "0x08a1e4fd4eed46c25c211cb35c05d801c769b78770474957b37379c527753c5c"
+            },
+            {
+              "name": "limit",
+              "value": 3
+            }
+          ],
+          "result": {
+            "name": "Result",
+            "value": {
+              "data": [
+                {
+                  "name": {
+                    "type": "0x9::test::TestField",
+                    "value": "some_value"
+                  },
+                  "bcsName": "2F1KQ3miNpBx1RzoRr1MVYMraK7RV",
+                  "type": "DynamicField",
+                  "objectType": "test",
+                  "objectId": "0x9d412044fe99007efb0f94f1e64d2e8090c619a39299d87ee8070b5f56bb10ba",
+                  "version": 1,
+                  "digest": "Hq7ReLUbx2j9twKVCbPdAb2ZS2UDoYEzcBTfQGFePoJ5"
+                },
+                {
+                  "name": {
+                    "type": "0x9::test::TestField",
+                    "value": "some_value"
+                  },
+                  "bcsName": "2F1KQ3miNpBx1RzoRr1MVYMraK7RV",
+                  "type": "DynamicField",
+                  "objectType": "test",
+                  "objectId": "0x0d31842e3a1743cc4c24010dafad05b12619b275649741cc9060d87664c26a3f",
+                  "version": 1,
+                  "digest": "BPP3UyRHoMTLtw7dTJtDvmiq71spjYVdabBsUhTWU2ju"
+                },
+                {
+                  "name": {
+                    "type": "0x9::test::TestField",
+                    "value": "some_value"
+                  },
+                  "bcsName": "2F1KQ3miNpBx1RzoRr1MVYMraK7RV",
+                  "type": "DynamicField",
+                  "objectType": "test",
+                  "objectId": "0x8040e6bb568cafc13246bd847c60448160e0358cac4a11345594d02890c986db",
+                  "version": 1,
+                  "digest": "HNCB6r7mpB7kGfyPSmUWkszZKqnuTxrB5zpATeXrZ5L8"
+                }
+              ],
+              "nextCursor": "0x8040e6bb568cafc13246bd847c60448160e0358cac4a11345594d02890c986db",
+              "hasNextPage": true
+            }
+          }
+        }
+      ]
     },
     {
       "name": "suix_getLatestSuiSystemState",

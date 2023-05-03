@@ -9,8 +9,9 @@ use std::str::FromStr;
 use fastcrypto::traits::EncodeDecodeBase64;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::ModuleId;
-use move_core_types::language_storage::StructTag;
+use move_core_types::language_storage::{StructTag, TypeTag};
 use move_core_types::resolver::ModuleResolver;
+use move_core_types::value::MoveStructLayout;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use serde_json::json;
@@ -19,14 +20,14 @@ use sui_json::SuiJsonValue;
 use sui_json_rpc::error::Error;
 use sui_json_rpc_types::TransactionFilter;
 use sui_json_rpc_types::{
-    Balance, Checkpoint, CheckpointId, CheckpointPage, Coin, CoinPage, EventPage, MoveCallParams,
-    ObjectChange, OwnedObjectRef, RPCTransactionRequestParams, SuiCommittee, SuiData, SuiEvent,
-    SuiExecutionStatus, SuiObjectData, SuiObjectDataFilter, SuiObjectDataOptions, SuiObjectRef,
-    SuiObjectResponse, SuiObjectResponseQuery, SuiParsedData, SuiPastObjectResponse,
-    SuiTransactionBlock, SuiTransactionBlockData, SuiTransactionBlockEffects,
-    SuiTransactionBlockEffectsV1, SuiTransactionBlockResponse, SuiTransactionBlockResponseOptions,
-    SuiTransactionBlockResponseQuery, TransactionBlockBytes, TransactionBlocksPage,
-    TransferObjectParams,
+    Balance, Checkpoint, CheckpointId, CheckpointPage, Coin, CoinPage, DynamicFieldPage, EventPage,
+    MoveCallParams, ObjectChange, OwnedObjectRef, RPCTransactionRequestParams, SuiCommittee,
+    SuiData, SuiEvent, SuiExecutionStatus, SuiObjectData, SuiObjectDataFilter,
+    SuiObjectDataOptions, SuiObjectRef, SuiObjectResponse, SuiObjectResponseQuery, SuiParsedData,
+    SuiPastObjectResponse, SuiTransactionBlock, SuiTransactionBlockData,
+    SuiTransactionBlockEffects, SuiTransactionBlockEffectsV1, SuiTransactionBlockResponse,
+    SuiTransactionBlockResponseOptions, SuiTransactionBlockResponseQuery, TransactionBlockBytes,
+    TransactionBlocksPage, TransferObjectParams,
 };
 use sui_json_rpc_types::{SuiTypeTag, ValidatorApy, ValidatorApys};
 use sui_open_rpc::ExamplePairing;
@@ -40,6 +41,7 @@ use sui_types::coin::CoinMetadata;
 use sui_types::committee::Committee;
 use sui_types::crypto::{get_key_pair_from_rng, AccountKeyPair, AggregateAuthoritySignature};
 use sui_types::digests::TransactionEventsDigest;
+use sui_types::dynamic_field::{DynamicFieldInfo, DynamicFieldName, DynamicFieldType};
 use sui_types::event::EventID;
 use sui_types::gas::GasCostSummary;
 use sui_types::gas_coin::GasCoin;
@@ -48,6 +50,7 @@ use sui_types::messages::ObjectArg;
 use sui_types::messages::TEST_ONLY_GAS_UNIT_FOR_TRANSFER;
 use sui_types::messages::{CallArg, TransactionData};
 use sui_types::messages_checkpoint::CheckpointDigest;
+use sui_types::object::MoveObject;
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::quorum_driver_types::ExecuteTransactionRequestType;
@@ -110,6 +113,8 @@ impl RpcExampleProvider {
             self.multi_get_objects_example(),
             self.multi_get_transaction_blocks(),
             self.suix_get_validators_apy(),
+            self.suix_get_dynamic_fields(),
+            self.suix_get_dynamic_field_object(),
         ]
         .into_iter()
         .map(|example| (example.function_name, example.examples))
@@ -916,6 +921,96 @@ impl RpcExampleProvider {
                     apys: result,
                     epoch: 420
                 }),
+            )],
+        )
+    }
+
+    fn suix_get_dynamic_fields(&mut self) -> Examples {
+        let object_id = ObjectID::new(self.rng.gen());
+        let dynamic_fields = (0..3)
+            .map(|_| DynamicFieldInfo {
+                name: DynamicFieldName {
+                    type_: TypeTag::from_str("0x9::test::TestField").unwrap(),
+                    value: serde_json::Value::String("some_value".to_string()),
+                },
+                bcs_name: bcs::to_bytes("0x9::test::TestField").unwrap(),
+                type_: DynamicFieldType::DynamicField,
+                object_type: "test".to_string(),
+                object_id: ObjectID::new(self.rng.gen()),
+                version: SequenceNumber::from_u64(1),
+                digest: ObjectDigest::new(self.rng.gen()),
+            })
+            .collect::<Vec<_>>();
+
+        let next_cursor = dynamic_fields.last().unwrap().object_id;
+
+        let page = DynamicFieldPage {
+            data: dynamic_fields,
+            next_cursor: Some(next_cursor),
+            has_next_page: true,
+        };
+
+        Examples::new("suix_getDynamicFields",             
+        vec![ExamplePairing::new(
+            "Get all the dynamic fields of a particular object. Return a paginated list of `limit` results per page. The current limit is 50 per page.",
+            vec![
+                ("parent_object_id", json!(object_id)),
+                ("cursor", json!(ObjectID::new(self.rng.gen()))),
+                ("limit", json!(3)),
+            ],
+            json!(page),
+        )],)
+    }
+
+    fn suix_get_dynamic_field_object(&mut self) -> Examples {
+        let parent_object_id = ObjectID::new(self.rng.gen());
+        let field_name = DynamicFieldName {
+            type_: TypeTag::from_str("0x9::test::TestField").unwrap(),
+            value: serde_json::Value::String("some_value".to_string()),
+        };
+
+        let resp = SuiObjectResponse::new_with_data(SuiObjectData {
+            content: Some(
+                SuiParsedData::try_from_object(
+                    unsafe {
+                        MoveObject::new_from_execution_with_limit(
+                            MoveObjectType::from(
+                                parse_sui_struct_tag("0x9::test::TestField").unwrap(),
+                            ),
+                            true,
+                            SequenceNumber::from_u64(1),
+                            Vec::new(),
+                            5,
+                        )
+                        .unwrap()
+                    },
+                    MoveStructLayout::WithFields(Vec::new()),
+                )
+                .unwrap(),
+            ),
+            owner: Some(Owner::AddressOwner(SuiAddress::from(ObjectID::new(
+                self.rng.gen(),
+            )))),
+            previous_transaction: Some(TransactionDigest::new(self.rng.gen())),
+            storage_rebate: Some(100),
+            object_id: parent_object_id,
+            version: SequenceNumber::from_u64(1),
+            digest: ObjectDigest::new(self.rng.gen()),
+            type_: Some(ObjectType::Struct(MoveObjectType::from(
+                parse_sui_struct_tag("0x9::test::TestField").unwrap(),
+            ))),
+            bcs: None,
+            display: None,
+        });
+        Examples::new(
+            "suix_getDynamicFieldObject",
+            vec![ExamplePairing::new(
+                "Gets a particular dynamic field data of the parent object.",
+                vec![
+                    ("parent_object_id", json!(parent_object_id)),
+                    ("name", json!(field_name)),
+                ],
+                json!(resp),
             )],
         )
     }
