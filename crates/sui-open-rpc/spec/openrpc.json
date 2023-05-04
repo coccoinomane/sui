@@ -2432,7 +2432,17 @@
         "schema": {
           "$ref": "#/components/schemas/SuiSystemStateSummary"
         }
-      }
+      },
+      "examples": [
+        {
+          "name": "Get objects owned by the address in the request.",
+          "params": [],
+          "result": {
+            "name": "Result",
+            "value": "some_system_state"
+          }
+        }
+      ]
     },
     {
       "name": "suix_getOwnedObjects",
@@ -2481,7 +2491,88 @@
         "schema": {
           "$ref": "#/components/schemas/Page_for_SuiObjectResponse_and_ObjectID"
         }
-      }
+      },
+      "examples": [
+        {
+          "name": "Get objects owned by the address in the request.",
+          "params": [
+            {
+              "name": "address",
+              "value": "0x02c5637f018f6ea7bed8f6c3d80f2a595c2305e12dd6d07c3fbbd3ebef7dbcc7"
+            },
+            {
+              "name": "query",
+              "value": {
+                "filter": {
+                  "StructType": "0x2::coin::Coin<0x2::sui::SUI>"
+                },
+                "options": {
+                  "showType": true,
+                  "showOwner": true,
+                  "showPreviousTransaction": true,
+                  "showDisplay": false,
+                  "showContent": false,
+                  "showBcs": false,
+                  "showStorageRebate": false
+                }
+              }
+            },
+            {
+              "name": "cursor",
+              "value": "0x27e784493fb1dccde7893a3ac5c67cd2c4e27540b52ee828096b2aa5fe50a7ef"
+            },
+            {
+              "name": "limit",
+              "value": 100
+            }
+          ],
+          "result": {
+            "name": "Result",
+            "value": [
+              {
+                "objectId": "0xb02346cdf05674452cc61f316af5d5d7c02b94b02324268500a65bf5fdccb505",
+                "version": "0",
+                "digest": "9mFK1ZH5yg3TrfMLdk3SjJF7LHjo26GMb8p5APMWEvb2",
+                "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                "owner": {
+                  "AddressOwner": "0x02c5637f018f6ea7bed8f6c3d80f2a595c2305e12dd6d07c3fbbd3ebef7dbcc7"
+                },
+                "previousTransaction": "AZ1Td7ABsqhCappS3frM57sZzfXwSjL4jHeVnPyNCDgf"
+              },
+              {
+                "objectId": "0x17edb1184cf075da5e934f672d3da3e003d989075efaecc79b5cd5df0df2a168",
+                "version": "0",
+                "digest": "3XoZP3XCNiP6TskQ4w342zvrEzgaRFenTHJqgMrTReJR",
+                "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                "owner": {
+                  "AddressOwner": "0x02c5637f018f6ea7bed8f6c3d80f2a595c2305e12dd6d07c3fbbd3ebef7dbcc7"
+                },
+                "previousTransaction": "5nPFHxQb1pL9YP5aFFpxP8tfNuvCtYxeWjZ618ohEpmF"
+              },
+              {
+                "objectId": "0xff86d354dff95b9484ea0d169d9d901f2cc13d4ec3e7fce50ffcb92062406f2b",
+                "version": "0",
+                "digest": "8t8joKypDPxhedt2SnkEJA6D1baJKpbmWiBDnxKZUXbb",
+                "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                "owner": {
+                  "AddressOwner": "0x02c5637f018f6ea7bed8f6c3d80f2a595c2305e12dd6d07c3fbbd3ebef7dbcc7"
+                },
+                "previousTransaction": "9FQrhSDx76dGG2kBGyLRxyxmLVbVw88SMyhUZh4JznrJ"
+              },
+              {
+                "objectId": "0x24962ee4193c8c0d2fb28bbe0eb4ba5fc87a2c6d1a7c12c9454872c5ea06d5e1",
+                "version": "0",
+                "digest": "B4g7NgvgmCFYzG2BPH6nT6kM5bPaRMD76LVJ4LWysq5w",
+                "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                "owner": {
+                  "AddressOwner": "0x02c5637f018f6ea7bed8f6c3d80f2a595c2305e12dd6d07c3fbbd3ebef7dbcc7"
+                },
+                "previousTransaction": "JAgYeYMPm5VLzBYcYxxQUEatfG9gHdFqSNwmBBS41Bri"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "name": "suix_getReferenceGasPrice",
@@ -2702,7 +2793,98 @@
         "schema": {
           "$ref": "#/components/schemas/Page_for_Event_and_EventID"
         }
-      }
+      },
+      "examples": [
+        {
+          "name": "Return the events for a specified query criteria.",
+          "params": [
+            {
+              "name": "query",
+              "value": {
+                "MoveModule": {
+                  "package": "0x41f0e2e9beabd601bbdabf2828ee9ca7e4227a61cff851fef9fb6a08ae444c96",
+                  "module": "test"
+                }
+              }
+            },
+            {
+              "name": "cursor",
+              "value": {
+                "txDigest": "F9bjfskzwBPNznSxzkX8QDYCVBBWKgarv9AedHLYEHYM",
+                "eventSeq": "1"
+              }
+            },
+            {
+              "name": "limit",
+              "value": 100
+            },
+            {
+              "name": "descending_order",
+              "value": false
+            }
+          ],
+          "result": {
+            "name": "Result",
+            "value": {
+              "data": [
+                {
+                  "id": {
+                    "txDigest": "2SY11dmdTQv6JLD2wqcsMiJNqXbXUkn87Rzw5NHib8Mf",
+                    "eventSeq": "1"
+                  },
+                  "packageId": "0xfd8c239761472a7bd558483a1afc4d7436a44854f791326ecb82ab41715fbfcd",
+                  "transactionModule": "test",
+                  "sender": "0x3c32a326a7f63d8633919a1f29d8cb1f10a4f7f59133b762979a37147c5c7140",
+                  "type": "0x3::test::Test<0x3::test::Test>",
+                  "parsedJson": "some_value",
+                  "bcs": ""
+                },
+                {
+                  "id": {
+                    "txDigest": "DkaTtjSfULiQ7FT48kzuS7yKj2JUAWGgjDBXddqn1z9o",
+                    "eventSeq": "1"
+                  },
+                  "packageId": "0xfd8c239761472a7bd558483a1afc4d7436a44854f791326ecb82ab41715fbfcd",
+                  "transactionModule": "test",
+                  "sender": "0x2c70ed44a02ec85d789e77f3b895b4a645c8a97f047f5cd1555ce3d12ca5cbb8",
+                  "type": "0x3::test::Test<0x3::test::Test>",
+                  "parsedJson": "some_value",
+                  "bcs": ""
+                },
+                {
+                  "id": {
+                    "txDigest": "Hzm9VAHN3fBsfMgkgzJrRtrZoX1bHUEg11f2PTSCUY1G",
+                    "eventSeq": "1"
+                  },
+                  "packageId": "0xfd8c239761472a7bd558483a1afc4d7436a44854f791326ecb82ab41715fbfcd",
+                  "transactionModule": "test",
+                  "sender": "0x7db21f1f0b460855197983dcd62623d20399a9efb03fc616303fc126a803a730",
+                  "type": "0x3::test::Test<0x3::test::Test>",
+                  "parsedJson": "some_value",
+                  "bcs": ""
+                },
+                {
+                  "id": {
+                    "txDigest": "F9bjfskzwBPNznSxzkX8QDYCVBBWKgarv9AedHLYEHYM",
+                    "eventSeq": "1"
+                  },
+                  "packageId": "0xfd8c239761472a7bd558483a1afc4d7436a44854f791326ecb82ab41715fbfcd",
+                  "transactionModule": "test",
+                  "sender": "0x264fd0f26998d433d32f6ec05b4e2ef0fb3e564b8b3cb1eef4e30b58d86f5808",
+                  "type": "0x3::test::Test<0x3::test::Test>",
+                  "parsedJson": "some_value",
+                  "bcs": ""
+                }
+              ],
+              "nextCursor": {
+                "txDigest": "F9bjfskzwBPNznSxzkX8QDYCVBBWKgarv9AedHLYEHYM",
+                "eventSeq": "1"
+              },
+              "hasNextPage": false
+            }
+          }
+        }
+      ]
     },
     {
       "name": "suix_queryTransactionBlocks",

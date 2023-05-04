@@ -18,6 +18,7 @@ use serde_json::json;
 
 use sui_json::SuiJsonValue;
 use sui_json_rpc::error::Error;
+use sui_json_rpc_types::EventFilter;
 use sui_json_rpc_types::TransactionFilter;
 use sui_json_rpc_types::{
     Balance, Checkpoint, CheckpointId, CheckpointPage, Coin, CoinPage, DynamicFieldPage, EventPage,
@@ -115,6 +116,9 @@ impl RpcExampleProvider {
             self.suix_get_validators_apy(),
             self.suix_get_dynamic_fields(),
             self.suix_get_dynamic_field_object(),
+            self.suix_get_owned_objects(),
+            self.suix_query_events(),
+            self.suix_get_latest_sui_system_state(),
         ]
         .into_iter()
         .map(|example| (example.function_name, example.examples))
@@ -553,6 +557,16 @@ impl RpcExampleProvider {
         range
             .into_iter()
             .map(|_| TransactionDigest::new(self.rng.gen()))
+            .collect()
+    }
+
+    fn get_event_ids(&mut self, range: Range<u64>) -> Vec<EventID> {
+        range
+            .into_iter()
+            .map(|_| EventID {
+                tx_digest: TransactionDigest::new(self.rng.gen()),
+                event_seq: 1,
+            })
             .collect()
     }
 
@@ -1011,6 +1025,112 @@ impl RpcExampleProvider {
                     ("name", json!(field_name)),
                 ],
                 json!(resp),
+            )],
+        )
+    }
+
+    fn suix_get_owned_objects(&mut self) -> Examples {
+        let owner = SuiAddress::from(ObjectID::new(self.rng.gen()));
+        let result = (0..4)
+            .map(|_| SuiObjectData {
+                object_id: ObjectID::new(self.rng.gen()),
+                version: Default::default(),
+                digest: ObjectDigest::new(self.rng.gen()),
+                type_: Some(ObjectType::Struct(MoveObjectType::gas_coin())),
+                owner: Some(Owner::AddressOwner(owner)),
+                previous_transaction: Some(TransactionDigest::new(self.rng.gen())),
+                storage_rebate: None,
+                display: None,
+                content: None,
+                bcs: None,
+            })
+            .collect::<Vec<_>>();
+
+        Examples::new(
+            "suix_getOwnedObjects",
+            vec![ExamplePairing::new(
+                "Get objects owned by the address in the request.",
+                vec![
+                    ("address", json!(owner)),
+                    (
+                        "query",
+                        json!(SuiObjectResponseQuery {
+                            filter: Some(SuiObjectDataFilter::StructType(
+                                StructTag::from_str("0x2::coin::Coin<0x2::sui::SUI>").unwrap()
+                            )),
+                            options: Some(
+                                SuiObjectDataOptions::new()
+                                    .with_type()
+                                    .with_owner()
+                                    .with_previous_transaction()
+                            )
+                        }),
+                    ),
+                    ("cursor", json!(ObjectID::new(self.rng.gen()))),
+                    ("limit", json!(100)),
+                ],
+                json!(result),
+            )],
+        )
+    }
+
+    fn suix_query_events(&mut self) -> Examples {
+        let package_id = ObjectID::new(self.rng.gen());
+        let identifier = Identifier::from_str("test").unwrap();
+        let mut event_ids = self.get_event_ids(5..9);
+        let has_next_page = event_ids.len() > (9 - 5);
+        event_ids.truncate(9 - 5);
+        let next_cursor = event_ids.last().cloned();
+        let cursor = event_ids.last().cloned();
+
+        let data = event_ids
+            .into_iter()
+            .map(|event_id| SuiEvent {
+                id: event_id,
+                package_id,
+                transaction_module: identifier.clone(),
+                sender: SuiAddress::random_for_testing_only(),
+                type_: StructTag::from_str("0x3::test::Test<0x3::test::Test>").unwrap(),
+                parsed_json: serde_json::Value::String("some_value".to_string()),
+                bcs: vec![],
+                timestamp_ms: None,
+            })
+            .collect();
+
+        let result = EventPage {
+            data,
+            next_cursor,
+            has_next_page,
+        };
+        Examples::new(
+            "suix_queryEvents",
+            vec![ExamplePairing::new(
+                "Return the events for a specified query criteria.",
+                vec![
+                    (
+                        "query",
+                        json!(EventFilter::MoveModule {
+                            package: ObjectID::new(self.rng.gen()),
+                            module: Identifier::from_str("test").unwrap(),
+                        }),
+                    ),
+                    ("cursor", json!(cursor)),
+                    ("limit", json!(100)),
+                    ("descending_order", json!(false)),
+                ],
+                json!(result),
+            )],
+        )
+    }
+
+    fn suix_get_latest_sui_system_state(&mut self) -> Examples {
+        let result = "some_system_state";
+        Examples::new(
+            "suix_getLatestSuiSystemState",
+            vec![ExamplePairing::new(
+                "Get objects owned by the address in the request.",
+                vec![],
+                json!(result),
             )],
         )
     }
