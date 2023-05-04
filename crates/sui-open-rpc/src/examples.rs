@@ -18,7 +18,9 @@ use serde_json::json;
 
 use sui_json::SuiJsonValue;
 use sui_json_rpc::error::Error;
+use sui_json_rpc_types::DevInspectResults;
 use sui_json_rpc_types::EventFilter;
+use sui_json_rpc_types::SuiTransactionBlockEvents;
 use sui_json_rpc_types::TransactionFilter;
 use sui_json_rpc_types::{
     Balance, Checkpoint, CheckpointId, CheckpointPage, Coin, CoinPage, DynamicFieldPage, EventPage,
@@ -100,6 +102,8 @@ impl RpcExampleProvider {
             self.query_transaction_blocks(),
             self.get_events(),
             self.execute_transaction_example(),
+            self.dry_run_transaction_block(),
+            self.dev_inspect_transaction_block(),
             self.get_checkpoint_example(),
             self.get_checkpoints(),
             self.sui_get_committee_info(),
@@ -234,6 +238,48 @@ impl RpcExampleProvider {
                     ),
                 ],
                 json!(result),
+            )],
+        )
+    }
+
+    fn dry_run_transaction_block(&mut self) -> Examples {
+        let (data, _, _, _, result) = self.get_transfer_data_response();
+        let tx_bytes = TransactionBlockBytes::from_data(data).unwrap();
+
+        Examples::new(
+            "sui_dryRunTransactionBlock",
+            vec![ExamplePairing::new(
+                "Dry run a transaction block to get back estimated gas fees and other potential effects.",
+                vec![
+                    ("tx_bytes", json!(tx_bytes.tx_bytes)),
+                ],
+                json!(result),
+            )],
+        )
+    }
+
+    fn dev_inspect_transaction_block(&mut self) -> Examples {
+        let (data, _, _, _, result) = self.get_transfer_data_response();
+        let tx_bytes = TransactionBlockBytes::from_data(data).unwrap();
+
+        let dev_inspect_results = DevInspectResults {
+            effects: result.effects.unwrap(),
+            events: SuiTransactionBlockEvents { data: vec![] },
+            results: None,
+            error: None,
+        };
+
+        Examples::new(
+            "sui_devInspectTransactionBlock",
+            vec![ExamplePairing::new(
+                "Runs the transaction in dev-inspect mode. Which allows for nearly any transaction (or Move call) with any arguments. Detailed results are provided, including both the transaction effects and any return values.",
+                vec![
+                    ("sender_address", json!(SuiAddress::from(ObjectID::new(self.rng.gen())))),
+                    ("tx_bytes", json!(tx_bytes.tx_bytes)),
+                    ("gas_price", json!(1000)),
+                    ("epoch", json!(8888)),
+                ],
+                json!(dev_inspect_results),
             )],
         )
     }
