@@ -70,7 +70,7 @@ export function ProgressBar({ progress, animate }: ProgressBarProps) {
                 {isAnimated && (
                     <motion.div
                         variants={flashPointContainerVariant}
-                        className="aboslute left-0 motion-reduce:hidden"
+                        className="motion-reduce:hidden"
                     >
                         <motion.div
                             variants={getFlashPointVariant(progress)}
