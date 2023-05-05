@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useTransactionSummary } from '@mysten/core';
+import { formatDate, useTransactionSummary } from '@mysten/core';
 import {
     getTransactionKind,
     getTransactionKindName,
@@ -13,7 +13,12 @@ import { GasBreakdown } from '~/components/GasBreakdown';
 import { InputsCard } from '~/pages/transaction-result/programmable-transaction-view/InputsCard';
 import { TransactionsCard } from '~/pages/transaction-result/programmable-transaction-view/TransactionsCard';
 import { Heading } from '~/ui/Heading';
-import { CheckpointSequenceLink } from '~/ui/InternalLink';
+import {
+    AddressLink,
+    CheckpointSequenceLink,
+    EpochLink,
+} from '~/ui/InternalLink';
+import { Text } from '~/ui/Text';
 import {
     TransactionBlockCard,
     TransactionBlockCardSection,
@@ -45,19 +50,89 @@ export function TransactionData({ transaction }: Props) {
                     <TransactionBlockCard>
                         <TransactionBlockCardSection>
                             <div className="flex flex-col gap-2">
-                                <Heading
-                                    variant="heading4/semibold"
-                                    color="steel-darker"
-                                >
-                                    Checkpoint
-                                </Heading>
-                                <CheckpointSequenceLink
-                                    noTruncate
-                                    label={Number(
-                                        transaction.checkpoint
-                                    ).toLocaleString()}
-                                    sequence={transaction.checkpoint}
-                                />
+                                <div className="flex items-center justify-between gap-2">
+                                    {summary?.sender && (
+                                        <>
+                                            <Text
+                                                variant="pBody/semibold"
+                                                color="steel-darker"
+                                            >
+                                                Sender
+                                            </Text>
+                                            <AddressLink
+                                                address={summary?.sender}
+                                            />
+                                        </>
+                                    )}
+                                </div>
+                                <div className="flex items-center justify-between gap-2">
+                                    <Text
+                                        variant="pBody/semibold"
+                                        color="steel-darker"
+                                    >
+                                        Checkpoint
+                                    </Text>
+                                    <CheckpointSequenceLink
+                                        noTruncate
+                                        label={Number(
+                                            transaction.checkpoint
+                                        ).toLocaleString()}
+                                        sequence={transaction.checkpoint}
+                                    />
+                                </div>
+                                <div className="flex items-center justify-between gap-2">
+                                    {transaction.effects?.executedEpoch && (
+                                        <>
+                                            <Text
+                                                variant="pBody/semibold"
+                                                color="steel-darker"
+                                            >
+                                                Executed Epoch
+                                            </Text>
+                                            <EpochLink
+                                                epoch={
+                                                    transaction.effects
+                                                        ?.executedEpoch
+                                                }
+                                            />
+                                        </>
+                                    )}
+                                </div>
+                                <div className="flex items-center justify-between gap-2">
+                                    {summary?.timestamp && (
+                                        <>
+                                            <Text
+                                                variant="pBody/semibold"
+                                                color="steel-darker"
+                                            >
+                                                Timestamp
+                                            </Text>
+                                            <Text
+                                                variant="pBody/normal"
+                                                color="steel-dark"
+                                            >
+                                                {`${new Intl.DateTimeFormat(
+                                                    'en-US',
+                                                    {
+                                                        year: 'numeric',
+                                                        month: '2-digit',
+                                                        day: '2-digit',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                        second: '2-digit',
+                                                        fractionalSecondDigits: 3,
+                                                    }
+                                                ).format(
+                                                    new Date(
+                                                        Number(
+                                                            summary?.timestamp
+                                                        ) ?? 0
+                                                    )
+                                                )}`}
+                                            </Text>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </TransactionBlockCardSection>
                     </TransactionBlockCard>
