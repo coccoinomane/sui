@@ -236,6 +236,10 @@ async fn check_response(
     }
 }
 
+/// convert_to_remote_write is an expensive method mostly due to the fact that we convert
+/// protobufs to remote_write protobufs.  We also compress this payload and await on posting
+/// to mimir.  These later two operations are inexpensive in steady state, but the posting
+/// await can sometimes be high if mimir is operationally degraded.
 pub async fn convert_to_remote_write(
     rc: ReqwestClient,
     node_metric: NodeMetric,
@@ -243,9 +247,36 @@ pub async fn convert_to_remote_write(
     let timer = CONSUMER_OPERATION_DURATION
         .with_label_values(&["convert_to_remote_write"])
         .start_timer();
+
+    // this is the most expensive part of this function scope - we use spawn_blocking
+    // since it's easy to use but under heavy loads, it may be more appropriate to use
+    // a dedicated thread.  We use this for now.
+    let remote_write_protos = match tokio::task::spawn_blocking(|| {
+        let timer = CONSUMER_OPERATION_DURATION
+            .with_label_values(&["convert_to_remote_write_task"])
+            .start_timer();
+        let result = Mimir::from(node_metric.data);
+        timer.observe_duration();
+        result
+    })
+    .await
+    {
+        Ok(v) => v,
+        Err(error) => {
+            CONSUMER_OPS
+                .with_label_values(&["mimir_protobufs", "INTERNAL_SERVER_ERROR"])
+                .inc();
+            error!("DROPPING METRICS due to post error: {error}");
+            timer.observe_duration();
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "DROPPING METRICS due to remote_write conversion error",
+            );
+        }
+    };
     // a counter so we don't iterate the node data 2x
     let mut mf_cnt = 0;
-    for request in Mimir::from(node_metric.data) {
+    for request in remote_write_protos {
         mf_cnt += 1;
         let compressed = match encode_compress(&request) {
             Ok(compressed) => compressed,
